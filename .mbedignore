@@ -1,4 +1,3 @@
-mbed-os/features/FEATURE_BLE/*
 mbed-os/features/FEATURE_COMMON_PAL/*
 mbed-os/features/FEATURE_LWIP/*
 mbed-os/features/FEATURE_UVISOR/*
