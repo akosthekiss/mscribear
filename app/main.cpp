@@ -1,22 +1,24 @@
 #include "mbed.h"
 #include "ble/BLE.h"
-#include "ble/services/UARTService.h"
 
 #include "jerryscript.h"
 #include "jerryscript-ext/arg.h"
 #include "jerryscript-ext/handler.h"
 
 #include "peripherals.h"
-#include "CStringBuffer.h"
 #include "Morse.h"
+#include "Buffer.h"
+#include "XMODEMReceiver.h"
+#include "ExtendedUARTService.h"
 
 
 static EventQueue queue;
 
 static const char ble_device_name[] = "Nano2";
-static UARTService* ble_uart_service_p;
+static ExtendedUARTService* ble_uart_service_p;
 
-static CStringBuffer strbuffer;
+static Buffer buffer;
+static XMODEMReceiver *xmodem;
 static jerry_value_t js_app_val;
 
 
@@ -50,15 +52,42 @@ static jerry_value_t js_handler_setled(const jerry_value_t func_obj_val, /**< fu
     return jerry_create_undefined();
 }
 
+static void onXmodemHeartbeat(void)
+{
+    if (BLE::Instance().gap().getState().connected)
+        xmodem->request();
+}
+
+static void doXmodemSend(char byte)
+{
+    if (BLE::Instance().gap().getState().connected)
+    {
+        ble_uart_service_p->writeChar(byte);
+        ble_uart_service_p->flush();
+        // usb.printf("[xmodem] sent: %x\r\n", (int)byte);
+    }
+}
+
+static void onXmodemSuccess(void)
+{
+    usb.printf("[xmodem] success: %.*s\r\n", buffer.size(), buffer.ptr());
+}
+
+static void onXmodemError(XMODEMReceiver::ErrorCode error)
+{
+    usb.printf("[xmodem] error: %d\r\n", (int)error);
+}
+
 static void onHeartbeat(void)
 {
-    usb.printf("[usb] heartbeat\r\n");
+    // usb.printf("[usb] heartbeat\r\n");
 
+    // [js] heartbeat
     if (!jerry_value_has_error_flag(js_app_val))
         jerry_release_value(jerry_run(js_app_val));
 
-    if (BLE::Instance().gap().getState().connected)
-        ble_uart_service_p->writeString("[ble] heartbeat");
+    // if (BLE::Instance().gap().getState().connected)
+    //     ble_uart_service_p->writeString("[ble] heartbeat");
 }
 
 static void onBleConnect(const Gap::ConnectionCallbackParams_t *params)
@@ -68,14 +97,17 @@ static void onBleConnect(const Gap::ConnectionCallbackParams_t *params)
     Morse morse(led1);
     morse.puts("HI");
 
-    strbuffer.clear();
+    xmodem->reset();
 }
 
 static void onBleDataWritten(const GattWriteCallbackParams *params) {
     usb.printf("[ble] written\r\n");
 
-    if (params->handle == ble_uart_service_p->getTXCharacteristicHandle())
-        bool appended = strbuffer.append((const char *)params->data, params->len);
+    if (params->handle == ble_uart_service_p->getTXCharacteristicHandle()) {
+        // usb.printf("      %.*s\r\n", params->len, (const char *)params->data);
+        unsigned int n = xmodem->dataReceived((const char *)params->data, params->len);
+        // usb.printf("      [%d]\r\n", n);
+    }
 }
 
 static void onBleDisconnect(const Gap::DisconnectionCallbackParams_t *params)
@@ -84,8 +116,6 @@ static void onBleDisconnect(const Gap::DisconnectionCallbackParams_t *params)
 
     Morse morse(led1);
     morse.puts("CU");
-
-    usb.printf("[strbuffer] %s\r\n", strbuffer.str());
 
     BLE::Instance().gap().startAdvertising();
 }
@@ -110,7 +140,7 @@ static void onBleInitComplete(BLE::InitializationCompleteCallbackContext *params
     ble.gap().onDisconnection(onBleDisconnect);
 
     /* Setup primary service */
-    ble_uart_service_p = new UARTService(ble);
+    ble_uart_service_p = new ExtendedUARTService(ble);
     ble.gattServer().onDataWritten(onBleDataWritten);
 
     /* Setup advertising */
@@ -133,30 +163,35 @@ int main()
 {
     usb.printf("[app] initializing jerry...\r\n");
     jerry_init(JERRY_INIT_EMPTY);
-    usb.printf("[app] ...success\r\n");
+    usb.printf("[app] ...done\r\n");
 
     usb.printf("[app] registering led handlers...\r\n");
     jerry_release_value(jerryx_handler_register_global((const jerry_char_t*)"getled", js_handler_getled));
     jerry_release_value(jerryx_handler_register_global((const jerry_char_t*)"setled", js_handler_setled));
     jerry_release_value(jerryx_handler_register_global((const jerry_char_t*)"print", jerryx_handler_print));
-    usb.printf("[app] ...success\r\n");
+    usb.printf("[app] ...done\r\n");
 
     usb.printf("[app] parsing js code...\r\n");
     const char *js_app_str = "setled(!getled()); /*print('[script] switched')*/";
     js_app_val = jerry_parse((const jerry_char_t*)js_app_str, strlen(js_app_str), false);
-    usb.printf("[app] ...success\r\n");
+    usb.printf("[app] ...done\r\n");
 
     usb.printf("[app] initializing ble...\r\n");
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(onBleProcessEvents);
     ble.init(onBleInitComplete);
-    usb.printf("[app] ...success\r\n");
+    usb.printf("[app] ...done\r\n");
+
+    usb.printf("[app] initializing xmodem...\r\n");
+    xmodem = new XMODEMReceiver(buffer, doXmodemSend, onXmodemSuccess, onXmodemError);
+    usb.printf("[app] ...done\r\n");
 
     Morse morse(led1);
     morse.puts("CQ ");
 
     usb.printf("[app] starting event queue...\r\n");
     queue.call_every(2000, onHeartbeat);
+    queue.call_every(10000, onXmodemHeartbeat);
     queue.dispatch_forever();
 
     return 0;
