@@ -1,12 +1,13 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
+#include <cstdlib>
 #include <cstring>
 
 
 class Buffer {
 public:
-    Buffer(unsigned int capacity = 0, unsigned int increment = 0)
+    Buffer(unsigned int capacity=0, unsigned int increment=0)
         : _ptr(0)
         , _size(0)
         , _capacity(0)
@@ -71,6 +72,18 @@ public:
     void chop(unsigned int size)
     {
         _size = size < _size ? _size - size : 0;
+    }
+
+    void take(Buffer &buffer)
+    {
+        clear();
+        _ptr = buffer._ptr;
+        _size = buffer._size;
+        _capacity = buffer._capacity;
+
+        buffer._ptr = NULL;
+        buffer._size = 0;
+        buffer._capacity = 0;
     }
 
 private:

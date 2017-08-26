@@ -1,9 +1,7 @@
-#include "mbed.h"
-
 #include "jerryscript-port.h"
 #include "jerryscript-ext/handler.h"
 
-#include "peripherals.h"
+#include "main.h"
 #include "Morse.h"
 
 
@@ -21,9 +19,8 @@ void jerry_port_fatal(jerry_fatal_code_t code)
 {
     Morse morse(led1);
 
-    while (true) {
+    while (true)
         morse.puts("SOS ", true);
-    }
 }
 
 void jerry_port_log(jerry_log_level_t level, /**< log level */
