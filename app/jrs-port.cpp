@@ -7,12 +7,14 @@
 
 bool jerry_port_get_time_zone(jerry_time_zone_t *tz_p) /**< [out] time zone structure to fill */
 {
-    return false;
+    tz_p->offset = 0;
+    tz_p->daylight_saving_time = 0;
+    return true;
 }
 
 double jerry_port_get_current_time(void)
 {
-    return 0.0;
+    return time(NULL) * 1000.0; // seconds precision only
 }
 
 void jerry_port_fatal(jerry_fatal_code_t code)
