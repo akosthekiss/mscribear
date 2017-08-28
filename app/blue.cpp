@@ -4,6 +4,7 @@
 #include "ble/BLE.h"
 
 #include "Buffer.h"
+#include "CurrentTimeService.h"
 #include "ExtendedUARTService.h"
 #include "jrs-thread.h"
 #include "main.h"
@@ -11,7 +12,8 @@
 
 
 static const char blue_device_name[] = "Nano2";
-static ExtendedUARTService* blue_uart_service;
+static ExtendedUARTService *blue_uart_service;
+static CurrentTimeService *blue_current_time_service;
 
 static XMODEMReceiver *blue_xmodem;
 static Buffer blue_xmodem_buffer;
@@ -56,9 +58,8 @@ static void blue_connected(const Gap::ConnectionCallbackParams_t *params)
 }
 
 static void blue_characteristic_written(const GattWriteCallbackParams *params) {
-    usb.printf("[blue] characteristic written\r\n");
-
     if (params->handle == blue_uart_service->getTXCharacteristicHandle()) {
+        usb.printf("[blue] uart tx characteristic written\r\n");
         // usb.printf("      %.*s\r\n", params->len, (const char *)params->data);
         unsigned int n = blue_xmodem->dataReceived((const char *)params->data, params->len);
         // usb.printf("      [%d]\r\n", n);
@@ -90,20 +91,34 @@ static void blue_init_completed(BLE::InitializationCompleteCallbackContext *para
     ble.gap().onConnection(blue_connected);
     ble.gap().onDisconnection(blue_disconnected);
 
-    /* Setup primary service */
+    /* Setup services */
     usb.printf("[blue] initializing uart service\r\n");
     blue_uart_service = new ExtendedUARTService(ble);
     ble.gattServer().onDataWritten(blue_characteristic_written);
 
+    usb.printf("[blue] initializing current time service\r\n");
+    blue_current_time_service = new CurrentTimeService(ble);
+
     /* Setup advertising */
     usb.printf("[blue] configuring and starting advertising\r\n");
+
+    uint16_t uuid16_list[] = { GattService::UUID_CURRENT_TIME_SERVICE };
+
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_128BIT_SERVICE_IDS,
                                            (const uint8_t *)UARTServiceUUID_reversed, sizeof(UARTServiceUUID_reversed));
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::SHORTENED_LOCAL_NAME,
-                                           (const uint8_t *)blue_device_name, sizeof(blue_device_name));
+    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS,
+                                           (const uint8_t *)uuid16_list, sizeof(uuid16_list));
+    // NOTE: the name might not fit in the advertising payload anymore, so put
+    //       it into the scan response
+    // NOTE: don't try to split the payload in a different way, keep all 128 and
+    //       16 bit service UUIDS in the advertising payload, BluefruitLE/OSX
+    //       may not be able to see all of them (Android BLE stack handles that
+    //       case correctly, too)
+    ble.gap().accumulateScanResponse(GapAdvertisingData::COMPLETE_LOCAL_NAME,
+                                     (const uint8_t *)blue_device_name, sizeof(blue_device_name));
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(1000); /* ms */
+    ble.gap().setAdvertisingInterval(1000); /* multiples of 0.625ms */
     ble.gap().startAdvertising();
 }
 
