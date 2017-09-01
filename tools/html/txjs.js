@@ -57,12 +57,13 @@ function txjsStart(content) {
         })
         .then(_cts => {
             cts = _cts;
+            log.println('Resetting RTC...');
             return cts.readCurrentTime();
         })
         .then(date => {
-            log.println('RTC was ' + date);
+            log.println('RTC was ' + date.toUTCString());
             var now = new Date();
-            log.println('RTC reset to ' + now);
+            log.println('RTC reset to ' + now.toUTCString());
             return cts.writeCurrentTime(now);
         })
         .then(_ => {

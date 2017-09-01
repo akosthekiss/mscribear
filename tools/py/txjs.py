@@ -82,13 +82,13 @@ def main():
                 # the write to current time characteristic cannot finish.
                 print('Resetting RTC...')
 
-                print('RTC was %s' % cts.current_time)
-                now = datetime.datetime.now()
+                print('RTC was {0:%a, %d %b %Y %H:%M:%S GMT}'.format(cts.current_time))
+                now = datetime.datetime.utcnow()
                 cts.current_time = now
-                print('RTC reset to %s' % now)
+                print('RTC reset to {0:%a, %d %b %Y %H:%M:%S GMT}'.format(now))
 
                 # Now transfer the file with XMODEM over UART.
-                print('Transfering file %s with XMODEM...' % args.file)
+                print('Transfering file {0} with XMODEM...'.format(args.file))
 
                 # Write file content to the TX characteristic in 20 bytes
                 # chunks. Note that this implementation ignores the timeout.

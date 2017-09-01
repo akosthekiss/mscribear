@@ -29,26 +29,26 @@ CurrentTimeService.connect = function(device, log={ println: _ => {} }) {
 CurrentTimeService.prototype.readCurrentTime = function() {
     return this.currentTimeCharacteristic.readValue()
         .then(value => {
-            return new Date(
+            return new Date(Date.UTC(
                 value.getUint16(0, true),
                 value.getUint8(2) - 1,
                 value.getUint8(3),
                 value.getUint8(4),
                 value.getUint8(5),
                 value.getUint8(6)
-            );
+            ));
         });
 }
 
 // Promise<void> writeCurrentTime(Date date);
 CurrentTimeService.prototype.writeCurrentTime = function(date) {
     var value = new Uint8Array([
-        date.getFullYear() & 0xff, date.getFullYear() >> 8,
-        date.getMonth() + 1,
-        date.getDate(),
-        date.getHours(),
-        date.getMinutes(),
-        date.getSeconds(),
+        date.getUTCFullYear() & 0xff, date.getUTCFullYear() >> 8,
+        date.getUTCMonth() + 1,
+        date.getUTCDate(),
+        date.getUTCHours(),
+        date.getUTCMinutes(),
+        date.getUTCSeconds(),
         0, 0, 0
     ]);
     return this.currentTimeCharacteristic.writeValue(value);
