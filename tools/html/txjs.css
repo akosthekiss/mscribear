@@ -1,0 +1,86 @@
+body {
+    background-color: #ffffff;
+    font-family: "Helvetica", "Arial", sans-serif;
+    margin: 0;
+}
+
+h1 {
+    background-color: #333333;
+    color: #cccccc;
+    width: 100%;
+    margin: 0;
+    padding: 12px 24px 6px 24px;
+    font-size: 14pt;
+    font-weight: normal;
+}
+
+h2 {
+    background-color: #333333;
+    color: #888888;
+    width: 100%;
+    margin: 0;
+    padding: 0px 24px 12px 24px;
+    font-size: 10pt;
+    font-weight: normal;
+}
+
+h3 {
+    background-color: #eeeeee;
+    color: #888888;
+    border-top: 1px solid #cccccc;
+    border-bottom: 1px solid #cccccc;
+    width: 100%;
+    margin: 0;
+    padding: 6px 24px;
+    font-size: 12pt;
+    font-weight: normal;
+}
+
+div.indent {
+    margin: 0 24px;
+    padding: 0;
+}
+
+div.block {
+    margin: 6px 0;
+    padding: 6px 12px;
+}
+
+.code {
+    font-family: monospace;
+    font-size: 10pt;
+}
+
+#editor-block {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+}
+
+#editor {
+    white-space: pre;
+    border: none;
+    width: 100%;
+    resize: vertical;
+}
+
+#log-block {
+    background-color: #eeeeee;
+}
+
+#log {
+    white-space: pre-wrap;
+}
+
+.btn {
+    background-color: #888888;
+    color: #eeeeee;
+    /*border: 1px solid #cccccc;*/
+    display: inline-block;
+    padding: 6px 12px;
+    font-size: 10pt;
+    cursor: pointer;
+}
+
+input[type="file"] {
+    display: none;
+}

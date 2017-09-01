@@ -1,0 +1,38 @@
+<html>
+<head>
+  <title>TXJS: XMODEM over UART over WebBluetooth</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="txjs.css">
+</head>
+
+<body>
+<h1>TXJS</h1>
+<h2>XMODEM over UART over WebBluetooth</h2>
+
+<h3>JS</h3>
+<div class="indent">
+  <div class="block" id="editor-block">
+    <textarea class="code" id="editor" wrap="off">print('Hello WBT!');</textarea>
+  </div>
+
+  <form>
+    <label class="btn"><input id="open" type="file">Open</label>
+    <label class="btn" id="tx">TX</label>
+    <label class="btn" id="abort">Abort</label>
+  </form>
+</div>
+
+<h3>Log</h3>
+<div class="indent">
+  <div class="block" id="log-block">
+    <pre class="code" id="log"></pre>
+  </div>
+</div>
+</body>
+
+<script type="text/javascript" src="log.js"></script>
+<script type="text/javascript" src="uart.js"></script>
+<script type="text/javascript" src="xmodemsender.js"></script>
+<script type="text/javascript" src="txjs.js"></script>
+</html>
