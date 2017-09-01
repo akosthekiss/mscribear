@@ -1,5 +1,14 @@
 var log = new Log(document.querySelector('#log'));
-var uart = new UART(log);
+var device = null;
+var cts = null;
+var uart = null;
+
+function disconnect() {
+    if (device && device.gatt.connected) {
+        log.println('Disconnecting from device...');
+        device.gatt.disconnect();
+    }
+}
 
 function xmodemSend(buf) {
     function loop(i=0) {
@@ -24,31 +33,55 @@ function xmodemSend(buf) {
 function xmodemSuccess() {
     log.println();
     log.println('Transfer successful');
-    uart.disconnect();
+    disconnect();
 }
 
 function xmodemError() {
     log.println();
     log.println('Transfer failed');
-    uart.disconnect();
+    disconnect();
 }
 
 function txjsStart(content) {
     log.clear();
-    var xmodem = new XMODEMSender(content, xmodemSend, xmodemSuccess, xmodemError);
-    uart.connect(event => xmodem.dataReceived(event.target.value))
+    log.println('Requesting a device with UART service...');
+    return navigator.bluetooth.requestDevice({filters: [{services: [UART.SERVICE_UUID]}],
+                                              optionalServices: [CurrentTimeService.SERVICE_UUID]})
+        .then(_device => {
+            device = _device;
+            log.println('Connecting to device ' + device.name + ' [' + device.id + ']...');
+            return device.gatt.connect();
+        })
         .then(_ => {
+            return CurrentTimeService.connect(device, log);
+        })
+        .then(_cts => {
+            cts = _cts;
+            return cts.readCurrentTime();
+        })
+        .then(date => {
+            log.println('RTC was ' + date);
+            var now = new Date();
+            log.println('RTC reset to ' + now);
+            return cts.writeCurrentTime(now);
+        })
+        .then(_ => {
+            var xmodem = new XMODEMSender(content, xmodemSend, xmodemSuccess, xmodemError);
+            return UART.connect(device, event => xmodem.dataReceived(event.target.value), log);
+        })
+        .then(_uart => {
+            uart = _uart;
             log.println('Transfering code with XMODEM...');
         })
         .catch(error => {
-            log.println('Connection failed: ' + error);
+            log.println('Error: ' + error);
         });
 }
 
 function txjsAbort() {
     log.println();
     log.println('Aborting transfer...');
-    uart.disconnect();
+    disconnect();
 }
 
 function stringToUint8Array(str) {
