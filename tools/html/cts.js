@@ -29,8 +29,10 @@ CurrentTimeService.connect = function(device, log={ println: _ => {} }) {
 CurrentTimeService.prototype.readCurrentTime = function() {
     return this.currentTimeCharacteristic.readValue()
         .then(value => {
+            value = dataviewish(value);
             return new Date(Date.UTC(
-                value.getUint16(0, true),
+                // value.getUint16(0, true),
+                value.getUint8(0) | (value.getUint8(1) << 8),
                 value.getUint8(2) - 1,
                 value.getUint8(3),
                 value.getUint8(4),
