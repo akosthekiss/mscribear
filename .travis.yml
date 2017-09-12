@@ -1,0 +1,20 @@
+language: cpp
+os: linux
+
+addons:
+  apt:
+    sources:
+      - sourceline: ppa:team-gcc-arm-embedded/ppa
+    packages:
+      - gcc-arm-embedded
+
+before_install:
+  - pip install --user mbed-cli
+  - mbed deploy
+  - pip install --user -r mbed-os/requirements.txt
+
+install:
+  - pip install --user -r tools/py/requirements.txt
+
+script:
+  - mbed compile

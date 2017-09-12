@@ -1,2 +1,2 @@
-Adafruit-BluefruitLE
+git+https://github.com/adafruit/Adafruit_Python_BluefruitLE.git@master#egg=Adafruit-BluefruitLE
 xmodem
