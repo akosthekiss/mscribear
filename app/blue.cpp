@@ -9,17 +9,17 @@
 
 #include "mbed.h"
 #include "ble/BLE.h"
+#include "ble/services/UARTService.h"
 
 #include "Buffer.h"
 #include "CurrentTimeService.h"
-#include "ExtendedUARTService.h"
 #include "jrs-thread.h"
 #include "main.h"
 #include "XMODEMReceiver.h"
 
 
 static const char blue_device_name[] = "Nano2";
-static ExtendedUARTService *blue_uart_service;
+static UARTService *blue_uart_service;
 static CurrentTimeService *blue_current_time_service;
 
 static XMODEMReceiver *blue_xmodem;
@@ -31,7 +31,7 @@ static void blue_xmodem_send(char byte)
     if (BLE::Instance().gap().getState().connected)
     {
         // usb.printf("[blue] xmodem sent: %x\r\n", (int)byte);
-        blue_uart_service->writeChar(byte);
+        blue_uart_service->write(&byte, 1);
         blue_uart_service->flush();
     }
 }
@@ -100,7 +100,7 @@ static void blue_init_completed(BLE::InitializationCompleteCallbackContext *para
 
     /* Setup services */
     usb.printf("[blue] initializing uart service\r\n");
-    blue_uart_service = new ExtendedUARTService(ble);
+    blue_uart_service = new UARTService(ble);
     ble.gattServer().onDataWritten(blue_characteristic_written);
 
     usb.printf("[blue] initializing current time service\r\n");
